@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 type Todo = { id: string; title: string; completed: boolean };
+type Filter = 'All' | 'Active' | 'Completed';
 async function request(path = '', options?: RequestInit) {
   const response = await fetch(`/api/todos${path}`, { ...options, headers: { 'Content-Type': 'application/json' } });
   if (!response.ok) throw new Error('Could not save your changes. Please try again.');
@@ -7,6 +8,8 @@ async function request(path = '', options?: RequestInit) {
 }
 export function App() {
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [filter, setFilter] = useState<Filter>('All');
+  const visibleTodos = todos.filter(todo => filter === 'All' || todo.completed === (filter === 'Completed'));
   const [title, setTitle] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -31,7 +34,10 @@ export function App() {
       <div className="section-title"><h2>Your list</h2><span>KEEP IT SIMPLE</span></div>
       <form onSubmit={add}><label className="sr-only" htmlFor="title">New task</label><input id="title" maxLength={200} value={title} onChange={e => setTitle(e.target.value)} placeholder="What would you like to get done?"/><button disabled={busy || loading || !title.trim()}>Add task <span aria-hidden="true">↗</span></button></form>
       {error && <p role="alert">{error}</p>}
-      {loading ? <p className="empty">Loading your list…</p> : todos.length === 0 ? <p className="empty">A fresh start. Add your first task above.</p> : <ul>{todos.map(todo => <li key={todo.id} className={todo.completed ? 'completed' : ''}>
+      <div className="task-filters" role="group" aria-label="Filter tasks">
+        {(['All', 'Active', 'Completed'] as const).map(option => <button key={option} type="button" aria-pressed={filter === option} onClick={() => setFilter(option)}>{option}</button>)}
+      </div>
+      {loading ? <p className="empty">Loading your list…</p> : todos.length === 0 ? <p className="empty">A fresh start. Add your first task above.</p> : visibleTodos.length === 0 ? <p className="empty">{filter === 'Active' ? 'No active tasks.' : 'No completed tasks.'}</p> : <ul>{visibleTodos.map(todo => <li key={todo.id} className={todo.completed ? 'completed' : ''}>
         <label><input type="checkbox" checked={todo.completed} disabled={busy} onChange={() => void change(async () => { const updated = await request(`/${todo.id}`, { method: 'PATCH', body: JSON.stringify({ completed: !todo.completed }) }); setTodos(items => items.map(t => t.id === todo.id ? updated : t)); })}/><span>{todo.title}</span></label>
         <button className="delete" disabled={busy} aria-label={`Delete ${todo.title}`} onClick={() => void change(async () => { await request(`/${todo.id}`, { method: 'DELETE' }); setTodos(items => items.filter(t => t.id !== todo.id)); })}>×</button>
       </li>)}</ul>}
