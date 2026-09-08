@@ -5,6 +5,10 @@ refreshed on **2026-09-08**, with Jira in **English (US)**. They replace the ear
 and review-label screenshots. Captures show successive moments of the demo, not one simultaneous
 board state. Never infer current job activity from an older screenshot.
 
+The captures precede a cosmetic cleanup: visible `demo-*` labels have since been removed.
+The seeder now keeps fixture identity in an issue property. Only the temporary
+`implementation-busy` label is used to show running implementation work.
+
 [Open the board](https://bartsworkspace-45974496.atlassian.net/jira/software/projects/CXD/boards/34)
 · [Demo script and tickets](demo.md) · [Verified runs and PRs](verification.md)
 

@@ -189,7 +189,9 @@ build gate must pass there before a PR can be published. No sandbox permissions 
 
 `automation/demo-tickets.json` defines seven small, independent examples. Run the manual
 **Prepare demo tickets** workflow to seed them into Full Backlog. By default it preserves
-existing tickets and reuses each `demo-*` label, so rerunning does not create duplicates.
+existing tickets and matches the `agent-demo-fixture` issue property, so rerunning does not
+create duplicates or add visible labels. Existing `demo-*` labels are migrated into this
+property before removal. This property is only fixture identity; it grants no agent approval.
 It never selects or approves work and receives no model or GitHub publishing credential.
 
 Use reset only on a dedicated demo project, with all ticket workers idle. Selecting

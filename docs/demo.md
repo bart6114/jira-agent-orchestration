@@ -48,7 +48,8 @@ just to make the board look active.
 ## Reset or seed again
 
 The manual **Prepare demo tickets** workflow seeds all seven examples into Full Backlog.
-Default mode reuses `demo-*` labels and preserves existing tickets. Destructive reset is
+Default mode uses the `agent-demo-fixture` issue property and preserves existing tickets.
+Old `demo-*` labels are migrated into that property and removed. Destructive reset is
 for a dedicated demo project only, with workers idle, and requires the exact project key.
 See [setup](setup.md#prepare-a-repeatable-demo) for the content export, deletion scope and commands.
 No seeding step writes a fake plan, approves a ticket or creates a pretend PR.

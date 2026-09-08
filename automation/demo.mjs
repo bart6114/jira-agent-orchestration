@@ -39,12 +39,24 @@ if (mode === 'snapshot') {
   const type = metadata.issueTypes.find(t => t.name === 'Task' && !t.subtask);
   if (!type) throw new Error('Demo project must have a Task work type.');
   const existing = await inventory(); const result = [];
+  // Fixture identity is bookkeeping, separate from labels and signed agent state.
+  const propertyKey = 'agent-demo-fixture';
+  for (const issue of existing) {
+    const property = await jira.request(`/issue/${issue.key}/properties/${propertyKey}`, 'GET', undefined, true);
+    issue.demoId = property?.value?.id;
+  }
   for (const ticket of tickets) {
     const label = `demo-${ticket.id}`;
-    let issue = existing.find(i => i.fields.labels?.includes(label));
+    const matches = existing.filter(i => i.demoId === ticket.id || (!i.demoId && i.fields.labels?.includes(label)));
+    if (matches.length > 1) throw new Error(`Multiple tickets match demo fixture ${ticket.id}; resolve duplicates before seeding.`);
+    let issue = matches[0];
     if (!issue) {
-      issue = await jira.request('/issue', 'POST', { fields: { project: { key: project }, issuetype: { id: type.id }, summary: ticket.summary, description: adf(ticket.description), labels: [label] } });
+      issue = await jira.request('/issue', 'POST', { fields: { project: { key: project }, issuetype: { id: type.id }, summary: ticket.summary, description: adf(ticket.description) }, properties: [{ key: propertyKey, value: { id: ticket.id } }] });
       await jira.transition(issue.key, config.statuses.backlog);
+    } else {
+      // Persist identity before removing the legacy label so retries still find the ticket.
+      if (issue.demoId !== ticket.id) await jira.request(`/issue/${issue.key}/properties/${propertyKey}`, 'PUT', { id: ticket.id });
+      if (issue.fields.labels?.includes(label)) await jira.setLabel(issue.key, label, false);
     }
     result.push({ key: issue.key, role: ticket.demoRole, summary: ticket.summary });
   }
