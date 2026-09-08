@@ -1,4 +1,4 @@
-# Instrumenting Your Software Development Lifecycle with AI
+# Instrumenting Your Jira-Based Software Development Lifecycle with AI
 
 **Ticket → clarify → plan → human approval → implement → independently validate → PR → human review**
 
