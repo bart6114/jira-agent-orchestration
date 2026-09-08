@@ -1,0 +1,6 @@
+{
+  "statuses": {"backlog":"Full Backlog","selected":"Selected for Development","questions":"Needs Information","plan":"Plan Ready","approved":"Approved","implementing":"In Progress","waitingReview":"Waiting for Review","review":"In Review","done":"Done"},
+  "allowedPaths": ["src/", "tests/"],
+  "busyLabel": "implementation-busy",
+  "codexVersion": "0.153.4"
+}

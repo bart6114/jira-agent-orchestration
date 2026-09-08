@@ -1,0 +1,44 @@
+[
+  {
+    "id": "filters",
+    "summary": "Filter the list by All, Active and Completed",
+    "description": "Help users focus on unfinished work without losing completed tasks.\n\nAcceptance criteria:\n1. Add All, Active and Completed buttons above the list. All is selected initially and after reload.\n2. Filter client-side from existing task data, preserving order. Switching filters makes no API request and never deletes or modifies tasks.\n3. Completing an Active task or reopening a Completed task updates visibility after the successful API response. Failed updates preserve the existing state and show the error.\n4. Keep the selected filter while adding or deleting tasks. Show No active tasks. or No completed tasks. when that filter is empty; preserve the existing empty-list message when there are no tasks at all.\n5. Use accessible native buttons with an exposed selected state and visible keyboard focus.\n6. Add meaningful UI tests for filters, mutation visibility and failed updates.\n\nScope: src/ and tests/ only. No dependencies, API changes or saved filter preferences.",
+    "demoRole": "implement"
+  },
+  {
+    "id": "remaining",
+    "summary": "Show how many tasks are still active",
+    "description": "Give users a clear indication of remaining work.\n\nAcceptance criteria:\n1. Show 0 tasks remaining, 1 task remaining, or N tasks remaining above the task list, derived from tasks whose completed value is false.\n2. Update after successful add, complete, reopen and delete operations. Failed mutations must not change the count.\n3. Display the count after initial loading succeeds, including an empty list. Do not show a misleading zero while loading or after an initial load failure.\n4. Announce updates accessibly without taking keyboard focus.\n5. Add UI tests covering zero, singular, plural and updates after mutations.\n\nScope: src/ and tests/ only. This is a small frontend change; no new dependencies or API changes.",
+    "demoRole": "implement"
+  },
+  {
+    "id": "organize",
+    "summary": "Make a busy task list easier to organize",
+    "description": "When the list grows, it becomes difficult to find the next thing to work on. We have not decided whether we want alphabetical sorting, priorities, categories or something else. Ask which behavior we want before choosing or implementing a solution. Persistence requirements and default ordering are also undecided.",
+    "demoRole": "clarify"
+  },
+  {
+    "id": "rename",
+    "summary": "Rename an existing task without recreating it",
+    "description": "Users should be able to correct a task title while keeping its identity and completion state.\n\nAcceptance criteria:\n1. Provide an accessible Edit action for each task and a text input populated with its current title.\n2. Save with Enter or Save; cancel with Escape or Cancel, without writing to the API.\n3. Trim whitespace and reject an empty title or a title longer than 200 characters on both client and server.\n4. Persist successful edits through the existing API and SQLite; retain task ID and completion state across reload.\n5. On a failed save, show an error and retain the user's edit for retry.\n6. Add API and UI tests for saving, cancelling, validation and failed requests.\n\nScope: src/ and tests/ only. No new dependencies.",
+    "demoRole": "plan"
+  },
+  {
+    "id": "search",
+    "summary": "Find a task by typing part of its title",
+    "description": "Future improvement: add a case-insensitive title search with a clear-search action. Search should only change visibility, never modify stored tasks. Define its interaction with status filters before selecting this work.",
+    "demoRole": "backlog"
+  },
+  {
+    "id": "clear-completed",
+    "summary": "Clear completed tasks with a confirmation",
+    "description": "Future improvement: let users remove completed tasks in one action. Require confirmation that shows how many tasks will be deleted and preserve all active tasks. Decide how partial API failures and undo should behave before development.",
+    "demoRole": "backlog"
+  },
+  {
+    "id": "export",
+    "summary": "Export a task list for a weekly check-in",
+    "description": "Future improvement: download a portable snapshot of task titles and completion states for a weekly check-in. Choose CSV versus plain text, escaping rules and whether export includes all or only visible tasks before development.",
+    "demoRole": "backlog"
+  }
+]

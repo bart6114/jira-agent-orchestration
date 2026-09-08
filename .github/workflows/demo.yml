@@ -1,0 +1,53 @@
+name: Prepare demo tickets
+on:
+  workflow_dispatch:
+    inputs:
+      reset_project:
+        description: Delete all existing tickets in the configured demo project before seeding
+        type: boolean
+        default: false
+      confirm_project:
+        description: Exact Jira project key required only when resetting
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: demo-preparation
+  cancel-in-progress: false
+jobs:
+  seed:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
+      JIRA_CLOUD_ID: ${{ vars.JIRA_CLOUD_ID }}
+      JIRA_PROJECT_KEY: ${{ vars.JIRA_PROJECT_KEY }}
+      JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+      STATE_SIGNING_KEY: ${{ secrets.STATE_SIGNING_KEY }}
+      RESET_PROJECT: ${{ inputs.reset_project }}
+      CONFIRM_PROJECT: ${{ inputs.confirm_project }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+      - run: node automation/demo.mjs snapshot
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: demo-before
+          path: .run/demo-before.json
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: error
+      - run: node automation/demo.mjs seed
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: demo-tickets
+          path: .run/demo-tickets.json
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: error

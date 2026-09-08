@@ -1,0 +1,13 @@
+node_modules/
+dist/
+data/
+.env
+.env.*
+!.env.example
+.run/
+*.db
+*.db-shm
+*.db-wal
+auth.json
+credentials*
+.DS_Store

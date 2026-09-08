@@ -1,0 +1,193 @@
+name: Jira agent
+run-name: Jira ${{ inputs.issue_key }}
+on:
+  workflow_dispatch:
+    inputs:
+      issue_key:
+        description: Jira key to reconcile (for example CXD-1)
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: jira-${{ inputs.issue_key }}
+  cancel-in-progress: false
+# GitHub may replace a pending run; each run reads current Jira state.
+# Scheduled reconciliation recovers work for replaced/missed dispatches.
+env:
+  ISSUE_KEY: ${{ inputs.issue_key }}
+  JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
+  JIRA_CLOUD_ID: ${{ vars.JIRA_CLOUD_ID }}
+  JIRA_PROJECT_KEY: ${{ vars.JIRA_PROJECT_KEY }}
+  JIRA_APPROVER_IDS: ${{ vars.JIRA_APPROVER_IDS }}
+  DEFAULT_BRANCH: main
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      action: ${{ steps.prepare.outputs.action }}
+      base: ${{ steps.prepare.outputs.base }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+      - id: prepare
+        run: node automation/cli.mjs prepare
+        env:
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          STATE_SIGNING_KEY: ${{ secrets.STATE_SIGNING_KEY }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: steps.prepare.outputs.action != 'skip'
+        with:
+          name: context
+          path: .run/context.json
+          include-hidden-files: true
+          retention-days: 3
+          if-no-files-found: error
+  generate:
+    needs: prepare
+    if: needs.prepare.outputs.action != 'skip'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ needs.prepare.outputs.base }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+      - run: npm ci
+      - run: npm install --global @openai/codex@0.153.4
+      - name: Configure Linux sandbox and verify repository reads
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y bubblewrap apparmor-profiles apparmor-utils
+          sudo install -m 0644 /usr/share/apparmor/extra-profiles/bwrap-userns-restrict /etc/apparmor.d/bwrap-userns-restrict
+          sudo apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict
+          mkdir -p "$CODEX_HOME"
+          codex sandbox -c 'sandbox_mode="read-only"' -- node -e "require('node:fs').readFileSync('src/web/App.tsx'); console.log('Sandbox repository read passed')"
+        env:
+          CODEX_HOME: ${{ runner.temp }}/codex
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: context
+          path: .run
+      - name: Run the Codex CLI directly
+        run: node automation/cli.mjs agent
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CODEX_MODEL: ${{ vars.CODEX_MODEL }}
+          CODEX_HOME: ${{ runner.temp }}/codex
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: result
+          path: |
+            .run/result.json
+            .run/changes.patch
+          include-hidden-files: true
+          retention-days: 3
+          if-no-files-found: error
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: agent-log
+          path: |
+            .run/events.jsonl
+            .run/stderr.log
+          include-hidden-files: true
+          retention-days: 1
+  verify:
+    needs: [prepare, generate]
+    if: needs.prepare.outputs.action == 'implement'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ needs.prepare.outputs.base }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: result
+          path: .run
+      - run: node automation/cli.mjs apply
+      - run: npm ci
+      - run: npm run check && npm run demo:fixtures
+  publish:
+    needs: [prepare, generate, verify]
+    if: always() && needs.generate.result == 'success' && (needs.prepare.outputs.action == 'plan' || needs.verify.result == 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ needs.prepare.outputs.base }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: result
+          path: .run
+      # Restore authoritative context separately; never accept context from the agent job.
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: context
+          path: .run
+      - run: node automation/cli.mjs publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          STATE_SIGNING_KEY: ${{ secrets.STATE_SIGNING_KEY }}
+  report-failure:
+    needs: [prepare, generate, verify, publish]
+    if: always() && contains(needs.*.result, 'failure')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+      - run: node automation/cli.mjs failure
+        env:
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          STATE_SIGNING_KEY: ${{ secrets.STATE_SIGNING_KEY }}
+  cleanup:
+    needs: [prepare, generate, verify, publish, report-failure]
+    if: always() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+      - name: Clear implementation activity label
+        run: node automation/cli.mjs cleanup
+        env:
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          STATE_SIGNING_KEY: ${{ secrets.STATE_SIGNING_KEY }}
