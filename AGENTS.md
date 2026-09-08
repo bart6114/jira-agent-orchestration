@@ -26,6 +26,7 @@ status filters when adapting. Use `automation/demo-tickets.json` for reproducibl
 
 ## When maintaining this example
 
+- Document current behavior, configuration and usage. Keep change history and migration narratives out of the documentation.
 - Node 22.13+; `npm ci`; `npm run dev`. Frontend: http://127.0.0.1:5173.
 - `npm run check` runs TypeScript checking, API/UI tests, and the frontend build.
 - `npm run demo:fixtures` runs orchestration tests without cloud credentials or model calls.
@@ -63,7 +64,7 @@ this example's application choices. Inspect first; reuse the target's stack and 
    - Pinned CLI version, optional model override, auth mode and runner/storage requirements.
    - Allowed application paths and the target repository's independent validation commands.
    - State-signing secret and CI secrets/artifact retention. Rotate carefully: changing the
-     signing key invalidates old state and signed comment markers.
+     signing key invalidates existing state and signed comment markers.
 5. Implement the selected provider recipe below. Keep Jira/Git publishing outside model execution.
 6. Configure project-scoped Jira automation and CI secrets. Provide exact setup actions for
    any step that requires the user's credential entry or access authorization.

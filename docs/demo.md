@@ -31,10 +31,11 @@ These keys belong to this demo account. A new setup or reset gets its own keys.
    its actual questions with the intended behavior, for example an optional alphabetical
    A–Z sort, default off, case-insensitive, no saved preference, preserving tasks.
 4. Open CXD-8 in **Plan Ready**. Read the plan and its acceptance criteria. Leave it pending
-   for the audience to approve. If main changed since it was generated, refresh the plan
-   with a manual dispatch first and approve only the latest plan.
-5. Show the recorded **In Progress** screenshot of CXD-5 and CXD-6, their real workflow runs,
-   and the **Waiting for Review** column they reach when independent checks pass.
+   for the audience to approve. The plan must match the current main commit. Use a manual
+   dispatch to generate a matching plan when needed, then approve that plan.
+5. Show the implementation and independent validation jobs linked from CXD-5 and CXD-6,
+   then their tested PRs in **Waiting for Review**. Explain that In Progress indicates
+   execution and `implementation-busy` tracks the active worker.
 6. Open a completion comment: PR, branch and validation-run URLs are clickable. Open its PR
    to show the code and independent test evidence. Move to **In Review** only when a person
    begins reviewing. Leave merging to a human.
@@ -49,8 +50,8 @@ just to make the board look active.
 
 The manual **Prepare demo tickets** workflow seeds all seven examples into Full Backlog.
 Default mode uses the `agent-demo-fixture` issue property and preserves existing tickets.
-Old `demo-*` labels are migrated into that property and removed. Destructive reset is
-for a dedicated demo project only, with workers idle, and requires the exact project key.
+Destructive reset is for a dedicated demo project only, with workers idle, and requires
+the exact project key.
 See [setup](setup.md#prepare-a-repeatable-demo) for the content export, deletion scope and commands.
 No seeding step writes a fake plan, approves a ticket or creates a pretend PR.
 

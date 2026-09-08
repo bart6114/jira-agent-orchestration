@@ -1,25 +1,21 @@
 # Jira: an illustrated demo
 
-All screenshots below are native captures of the live **Codex Demo (CXD)** Jira project,
-refreshed on **2026-09-08**, with Jira in **English (US)**. They replace the earlier creation-trigger
-and review-label screenshots. Captures show successive moments of the demo, not one simultaneous
-board state. Never infer current job activity from an older screenshot.
-
-The captures precede a cosmetic cleanup: visible `demo-*` labels have since been removed.
-The seeder now keeps fixture identity in an issue property. Only the temporary
-`implementation-busy` label is used to show running implementation work.
+The screenshots show the live **Codex Demo (CXD)** project in **English (US)**.
+The board separates future ideas, selected work, plan approval, implementation and human review.
+Fixture identity lives in the `agent-demo-fixture` issue property; `implementation-busy`
+indicates active implementation and validation.
 
 [Open the board](https://bartsworkspace-45974496.atlassian.net/jira/software/projects/CXD/boards/34)
 · [Demo script and tickets](demo.md) · [Verified runs and PRs](verification.md)
 
 ## 1. Full backlog versus selected work
 
-![Three future ideas in Full Backlog and four chosen demo tickets in Selected for Development](screenshots/01-board-intake.png)
+![Current demo board with backlog, clarification, plan approval and review queues](screenshots/01-board-intake.png)
 
 **Full Backlog** is the initial status and holds everything we might build. It does not trigger
 agent execution. **Selected for Development** holds work a person has chosen to start; entry
-starts clarification or planning. This is Kanban. A Sprint Backlog would imply a real sprint
-with a time window and commitment, which this example does not implement.
+starts clarification or planning. This is a Kanban queue with no time-boxed sprints or
+capacity planning. Empty columns are collapsed in the overview for readability.
 
 | Board status | Owner and meaning |
 | --- | --- |
@@ -41,7 +37,7 @@ with a time window and commitment, which this example does not implement.
 | Comment or edit requirements in Full Backlog | Reply/edit status condition excludes it | No dispatch |
 | Move into Selected for Development | Work item transitioned, destination Selected for Development | Agent posts questions or a plan |
 | Human answers on active work | Work item commented, active-status filter, bot marker excluded | Context is reassessed; plan or further questions |
-| Edit Summary or Description on active work | Field value changed, active-status filter | Old requirements/approval become stale; fresh plan |
+| Edit Summary or Description on active work | Field value changed, active-status filter | Requirements and approval require reassessment; fresh plan |
 | Move Plan Ready → Approved | Exact transition rule; worker verifies allowed actor and current plan | Implement → independent checks → branch and PR |
 | Validation succeeds and PR is created | Trusted publisher | Finished comment with links; Waiting for Review; busy label removed |
 | Human starts reviewing | Move Waiting for Review → In Review | No implementation trigger |
@@ -56,8 +52,7 @@ A changed repository base or changed requirements requires a fresh plan and appr
 ![Enabled selection rule with any source status and Selected for Development as destination](screenshots/05-selection-trigger.png)
 
 Use **Work item transitioned**, leave From status blank, and set To status to **Selected for
-Development**. The old Work item created trigger is removed. The web request sends only the
-issue key; the worker fetches Jira's authoritative description, comments and changelog.
+Development**. The web request sends only the issue key; the worker fetches Jira's authoritative description, comments and changelog.
 
 ## 4. Replies and requirements edits
 
@@ -88,7 +83,7 @@ The worker checks that an allowlisted account performed **Plan Ready → Approve
 plan was published, and that the plan, requirements and repository base are still current.
 Thumbs-up reactions and text saying approved do not authorize implementation.
 
-![Demo board after planning with questions and implementation plans](screenshots/02-board-planning.png)
+![Needs Information and Plan Ready queues](screenshots/02-board-planning.png)
 
 ## 6. The GitHub dispatch request
 
@@ -129,23 +124,31 @@ CXD-5 gives the agent bounded behavior and test expectations. The code patch may
 CXD-7 intentionally leaves the desired organization behavior undecided. These are real model
 questions, not seeded bot text. A new human comment with the missing decisions resumes planning.
 
-![A real Codex implementation plan for the filtering ticket at Plan Ready](screenshots/14-implementation-plan.png)
+![Codex implementation plan for the rename ticket at Plan Ready](screenshots/14-implementation-plan.png)
 
 The plan is a separate comment from the completion result. The signed marker supports integrity
-checking and retry deduplication. CXD-8 provides another plan that can be reviewed during a demo.
+checking and retry deduplication. CXD-8 provides a plan for the human approval step.
 
 ## 8. Real execution and review handoff
 
-![Two approved demo features in In Progress with implementation-busy labels](screenshots/03-board-implementation.png)
+```mermaid
+flowchart LR
+  A[Approved plan] --> B[In Progress]
+  B --> C[Codex implementation]
+  C --> D[Independent validation]
+  D --> E[Publish branch and PR]
+  E --> F[Waiting for Review]
+  F --> G[Human starts In Review]
+```
 
-The worker adds `implementation-busy` when execution begins. The label stays through the
-independent validation job. The screenshot records actual running work; current jobs can
-finish before you open the board. Failures clear the busy label and report the failed run.
+The worker adds `implementation-busy` on entry to In Progress and keeps it through independent
+validation. Publication posts the completion links, clears the label and moves the ticket to
+Waiting for Review. Failures clear the activity label and report the failed run in Jira.
 
 ![The finished feature tickets in Waiting for Review before active human review](screenshots/04-board-review.png)
 
 Only independent passing checks and PR publication move a ticket here. A human later moves
-it to In Review. No `ready-for-review` label is used.
+it to In Review when review starts.
 
 ![One automatic completion comment with clickable branch, PR and validation-run links](screenshots/15-completion-comment.png)
 

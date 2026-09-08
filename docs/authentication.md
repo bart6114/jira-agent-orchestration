@@ -13,7 +13,7 @@ The API project pays for these calls separately from a ChatGPT subscription.
 The model process still needs its inference credential. Shell environment filtering is not a
 security boundary against a compromised same-user process. Use a vetted credential proxy and
 stronger process isolation if your threat model requires protecting that key from arbitrary
-agent-executed code. The GitHub/Jira publishing credentials already live in separate jobs.
+agent-executed code. The GitHub/Jira publishing credentials live in separate jobs.
 
 [Codex authentication](https://learn.chatgpt.com/docs/auth) ·
 [Non-interactive credential guidance](https://learn.chatgpt.com/docs/non-interactive-mode) ·

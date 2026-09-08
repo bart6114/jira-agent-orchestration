@@ -26,7 +26,7 @@ not display names, for the approver allowlist. Discover IDs through the user/pro
 
 The Jira API identity needs project browsing, comment creation, issue editing/properties,
 transitions and changelog access. Use a dedicated service account where your Jira plan supports
-one. A personal account works for this private demo; signed markers distinguish bot comments
+one. This demo uses a personal account; signed markers distinguish bot comments
 from the same person's human comments. Keep the token restricted to the intended setup.
 
 For a scoped Jira token, select Jira and the classic scopes `read:jira-work`, `write:jira-work`,
@@ -172,7 +172,7 @@ run URL. These use explicit [Jira ADF hyperlink marks](https://developer.atlassi
 so readers can click them; text round-tripping preserves signed comment verification.
 It moves the ticket from **In Progress → Waiting for Review** and clears the busy
 label. A person moves it to **In Review** when starting the review, then **Done** after completion.
-There is no review-ready label. Recovery preserves Waiting for Review, In Review and Done,
+Recovery preserves Waiting for Review, In Review and Done,
 and reuses the same completion comment rather than posting duplicate replies.
 
 A force-cancel, unavailable runner or Jira outage can prevent cleanup; the next run repairs
@@ -190,15 +190,15 @@ build gate must pass there before a PR can be published. No sandbox permissions 
 `automation/demo-tickets.json` defines seven small, independent examples. Run the manual
 **Prepare demo tickets** workflow to seed them into Full Backlog. By default it preserves
 existing tickets and matches the `agent-demo-fixture` issue property, so rerunning does not
-create duplicates or add visible labels. Existing `demo-*` labels are migrated into this
-property before removal. This property is only fixture identity; it grants no agent approval.
+create duplicates or add visible labels. This property is only fixture identity; it grants
+no agent approval.
 It never selects or approves work and receives no model or GitHub publishing credential.
 
 Use reset only on a dedicated demo project, with all ticket workers idle. Selecting
 `reset_project=true` and supplying the exact `confirm_project` key deletes **every ticket
 in that configured project**, including comments. It first exports issue content/comments
-to a private, seven-day artifact and stops if the project changed before deletion. That
-export is a content record, not a full Jira restore facility. GitHub PRs/branches are preserved.
+to a seven-day workflow artifact and stops if the project changed before deletion. Artifact
+access follows repository visibility. The export is a content record, not a full Jira restore facility. GitHub PRs/branches are preserved.
 After reset, Jira assigns new issue numbers; use the workflow's `demo-tickets` artifact.
 
 ```sh
