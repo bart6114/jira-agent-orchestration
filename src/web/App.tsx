@@ -10,8 +10,10 @@ export function App() {
   const [title, setTitle] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
-  useEffect(() => { request().then(setTodos).catch(() => setError('Could not load tasks. Refresh to try again.')).finally(() => setLoading(false)); }, []);
+  const remaining = todos.filter(todo => todo.completed === false).length;
+  useEffect(() => { request().then(items => { setTodos(items); setLoaded(true); }).catch(() => setError('Could not load tasks. Refresh to try again.')).finally(() => setLoading(false)); }, []);
   async function change(fn: () => Promise<void>) {
     setBusy(true); setError('');
     try { await fn(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
@@ -31,6 +33,7 @@ export function App() {
       <div className="section-title"><h2>Your list</h2><span>KEEP IT SIMPLE</span></div>
       <form onSubmit={add}><label className="sr-only" htmlFor="title">New task</label><input id="title" maxLength={200} value={title} onChange={e => setTitle(e.target.value)} placeholder="What would you like to get done?"/><button disabled={busy || loading || !title.trim()}>Add task <span aria-hidden="true">↗</span></button></form>
       {error && <p role="alert">{error}</p>}
+      <p className="remaining" role="status" aria-live="polite" aria-atomic="true">{loaded ? `${remaining} ${remaining === 1 ? 'task' : 'tasks'} remaining` : ''}</p>
       {loading ? <p className="empty">Loading your list…</p> : todos.length === 0 ? <p className="empty">A fresh start. Add your first task above.</p> : <ul>{todos.map(todo => <li key={todo.id} className={todo.completed ? 'completed' : ''}>
         <label><input type="checkbox" checked={todo.completed} disabled={busy} onChange={() => void change(async () => { const updated = await request(`/${todo.id}`, { method: 'PATCH', body: JSON.stringify({ completed: !todo.completed }) }); setTodos(items => items.map(t => t.id === todo.id ? updated : t)); })}/><span>{todo.title}</span></label>
         <button className="delete" disabled={busy} aria-label={`Delete ${todo.title}`} onClick={() => void change(async () => { await request(`/${todo.id}`, { method: 'DELETE' }); setTodos(items => items.filter(t => t.id !== todo.id)); })}>×</button>
